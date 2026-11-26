@@ -1,0 +1,68 @@
+# ---------------------------------------------------------------
+# Stream Dashboard settings. Streams listed here load at start;
+# you can add/remove more from the page (for that session only).
+# Add "captions: false" under a stream to skip its transcript.
+# ---------------------------------------------------------------
+streams:
+  - name: "Benjamin_SMC"
+    url: "https://www.youtube.com/@Benjamin_SMC/live"
+    enabled: true
+  - name: "ClaudiaTrades"
+    url: "https://www.youtube.com/@ClaudiaTrades/live"
+    enabled: true
+  - name: "Candytrades"
+    url: "https://www.youtube.com/@Candy.TheTrader/live"
+    enabled: true
+  - name: "dhesitrades"
+    url: "https://www.youtube.com/@dhesitrades/live"
+    enabled: true
+  - name: "keyflowtrades"
+    url: "https://www.youtube.com/@keyflowtrades/live"
+    enabled: true
+  - name: "SmartPropFirmTV"
+    url: "https://www.youtube.com/@SmartPropFirmTV/live"
+    enabled: true
+  - name: "TanjaTrades"
+    url: "https://www.youtube.com/@TanjaTrades/live"
+    enabled: true
+
+capture:
+  frames_per_second: 1      # how often each chart is checked for a position box
+  retry_seconds: 60         # how often to retry a stream that isn't live
+  keyframes_only: true      # decode only keyframes (every ~2 s): uses far less CPU
+
+# ---------------------------------------------------------------
+# Local filter (free, runs on your PC). Tuned for TradingView's default
+# Long/Short Position colours on dark and light themes. If a streamer uses
+# custom colours, run:  python watcher.py --calibrate screenshot.png
+# HSV in OpenCV units: H 0-180, S 0-255, V 0-255
+# ---------------------------------------------------------------
+filter:
+  chart_region: null          # optional [x, y, width, height] in 1280x720 pixels
+  green_hsv:
+    - { low: [75, 25, 35],  high: [100, 255, 255] }
+  red_hsv:
+    - { low: [160, 25, 40], high: [180, 255, 255] }
+    - { low: [0, 25, 40],   high: [8, 255, 255] }
+  min_box_width_frac: 0.04    # boxes must be >= 4% of chart width (drops candles)
+  min_box_height_px: 6
+  min_fill_ratio: 0.6         # how solid the shape must be
+  pair_gap_px: 8              # max gap between green and red box edges
+  confirm_frames: 2           # state must hold for 2 frames before triggering
+  reshape_tolerance: 0.3      # re-check if TP/SL ratio changes by >30%
+
+
+# ---------------------------------------------------------------
+# Page, transcripts and position monitor
+# ---------------------------------------------------------------
+dashboard:
+  port: 8800
+  open_browser: true
+  transcription: true
+  whisper_model: "base.en"   # tiny.en = lightest, small.en = more accurate but heavier
+  language: "en"
+  chunk_seconds: 6           # captions update every ~6 s
+  confirm_window_seconds: 90 # transcript lines this close to an entry can confirm it
+  position_clear_seconds: 30 # box gone this long -> mark position as possibly closed
+  trade_keywords: ["i'm long", "i'm short", "going long", "going short", "entered",
+                   "i'm in", "filled", "stop loss", "take profit", "my stop", "my target"]

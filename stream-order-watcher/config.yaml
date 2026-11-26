@@ -1,0 +1,69 @@
+# ---------------------------------------------------------------
+# Streams to watch. Use the channel's /live link so it keeps working
+# day to day, or a specific watch?v= link.
+# ---------------------------------------------------------------
+streams:
+  # "name" is what appears in the alert, e.g. "Candytrades short NQ at price: ..."
+  - name: "Benjamin_SMC"
+    url: "https://www.youtube.com/@Benjamin_SMC/live"
+    enabled: true
+  - name: "ClaudiaTrades"
+    url: "https://www.youtube.com/@ClaudiaTrades/live"
+    enabled: true
+  - name: "Candytrades"
+    url: "https://www.youtube.com/@Candy.TheTrader/live"
+    enabled: true
+  - name: "dhesitrades"
+    url: "https://www.youtube.com/@dhesitrades/live"
+    enabled: true
+  - name: "keyflowtrades"
+    url: "https://www.youtube.com/@keyflowtrades/live"
+    enabled: true
+  - name: "SmartPropFirmTV"
+    url: "https://www.youtube.com/@SmartPropFirmTV/live"
+    enabled: true
+  - name: "TanjaTrades"
+    url: "https://www.youtube.com/@TanjaTrades/live"
+    enabled: true
+
+capture:
+  frames_per_second: 1      # 1 frame/sec is plenty to catch a new position box
+  retry_seconds: 60         # how often to retry a stream that isn't live
+
+claude:
+  model: "claude-haiku-5-5"
+  cooldown_seconds: 10      # min gap between Claude calls per stream
+  max_calls_per_hour: 60    # hard cap per stream, protects your credits
+  min_confidence: 0.6       # ignore Claude answers below this confidence
+  duplicate_window_minutes: 60        # same trade won't be re-alerted within this time
+  duplicate_price_tolerance_pct: 0.1  # entries within 0.1% = same trade (~25 pts on NQ)
+  backup_window_minutes: 30           # max one "prices unavailable" alert per direction per 30 min
+
+alerts:
+  telegram: true              # uses TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID from .env
+  ntfy_server: "https://ntfy.sh"
+  ntfy_topic: null            # optional: set a topic name to also get ntfy alerts
+  save_rejected_frames: true    # keep frames Claude said were NOT a trade (alerts/rejected/)
+  save_trigger_frame: true      # keep the one frame that caused each alert (./alerts/)
+  attach_frame_to_alert: true   # also attach that frame to the phone notification
+
+# ---------------------------------------------------------------
+# Local filter (free, runs on your PC). Tuned for TradingView's default
+# Long/Short Position colours on dark and light themes. If a streamer uses
+# custom colours, run:  python watcher.py --calibrate screenshot.png
+# HSV in OpenCV units: H 0-180, S 0-255, V 0-255
+# ---------------------------------------------------------------
+filter:
+  chart_region: null          # optional [x, y, width, height] in 1280x720 pixels
+  green_hsv:
+    - { low: [75, 25, 35],  high: [100, 255, 255] }
+  red_hsv:
+    - { low: [160, 25, 40], high: [180, 255, 255] }
+    - { low: [0, 25, 40],   high: [8, 255, 255] }
+  min_box_width_frac: 0.04    # boxes must be >= 4% of chart width (drops candles)
+  min_box_height_px: 6
+  min_fill_ratio: 0.6         # how solid the shape must be
+  pair_gap_px: 8              # max gap between green and red box edges
+  confirm_frames: 2           # state must hold for 2 frames before triggering
+  reshape_tolerance: 0.3      # re-check if TP/SL ratio changes by >30%
+
