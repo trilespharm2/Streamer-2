@@ -38,3 +38,13 @@ Your browser opens http://localhost:8800. The first run downloads the speech mod
 
 ## If your PC struggles
 Set `whisper_model: "tiny.en"` in `dashboard.yaml`, or add `captions: false` under a stream.
+
+## Running on Replit
+1. Import this GitHub repo into Replit.
+2. **Tools → Secrets:** add `DASHBOARD_PASSWORD` (required; the page is public otherwise).
+   Optional: `TRANSCRIPTION` = `on` to turn transcripts on (heavy for small Replit machines;
+   also run `pip install faster-whisper` once).
+3. Press **Run**. The dashboard opens in Preview; sign in with any username and your password.
+4. If streams show "Sign in to confirm you're not a bot", YouTube is blocking Replit's servers:
+   run the dashboard on your PC instead.
+5. To keep it running when you close Replit, use a **Reserved VM** deployment (paid).

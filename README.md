@@ -9,3 +9,6 @@ Two separate apps for following YouTube live trading streams:
 
 Both need Python 3.10+ and ffmpeg. See each folder's README for setup.
 Secrets go in `stream-order-watcher/.env` (see `.env.example`), which is never committed.
+
+**Replit:** the Run button starts the dashboard (see `stream-dashboard/README.md`, "Running on Replit").
+Run the watcher from the Shell: `cd stream-order-watcher && pip install -r requirements.txt && python watcher.py`.

@@ -19,8 +19,11 @@ dashboard.yaml decides what loads at start.
 Run:   py dashboard.py      ->  opens http://localhost:8800
 """
 
+import base64
+import hmac
 import json
 import logging
+import os
 import re
 import subprocess
 import sys
@@ -50,6 +53,8 @@ SNAPS = {}                 # JPEG at the moment each position opened (memory onl
 ALERTS = deque(maxlen=50)  # recent position events across all streams
 CFG = {}
 TRANSCRIBER = None
+PASSWORD = os.environ.get("DASHBOARD_PASSWORD", "")
+ON_REPLIT = bool(os.environ.get("REPL_ID") or os.environ.get("REPLIT_DEV_DOMAIN"))
 
 
 LONG_WORDS = r"\b(long|longs|buy|buying|bought|calls?)\b"
@@ -761,7 +766,28 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def authorized(self):
+        """HTTP Basic auth, only when DASHBOARD_PASSWORD is set (always on Replit)."""
+        if not PASSWORD:
+            return True
+        h = self.headers.get("Authorization", "")
+        if h.startswith("Basic "):
+            try:
+                _, _, pw = base64.b64decode(h[6:]).decode("utf-8").partition(":")
+                if hmac.compare_digest(pw.encode(), PASSWORD.encode()):
+                    return True
+            except Exception:
+                pass
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="Stream Dashboard"')
+        self.send_header("Content-Type", "text/plain")
+        self.end_headers()
+        self.wfile.write(b"Password required")
+        return False
+
     def do_GET(self):
+        if not self.authorized():
+            return
         if self.path == "/":
             return self.send(200, PAGE.encode(), "text/html; charset=utf-8")
         if self.path == "/state":
@@ -787,6 +813,8 @@ class Handler(BaseHTTPRequestHandler):
         self.send(404, {"error": "not found"})
 
     def do_POST(self):
+        if not self.authorized():
+            return
         # custom header blocks other websites from posting here (browser CORS rule)
         if self.headers.get("X-Dash") != "1":
             return self.send(403, {"error": "forbidden"})
@@ -819,6 +847,14 @@ def main():
         CFG = yaml.safe_load(f)
     d = CFG.setdefault("dashboard", {})
 
+    if ON_REPLIT:
+        # small cloud machine: transcripts only if the TRANSCRIPTION secret is "on"
+        d["transcription"] = os.environ.get("TRANSCRIPTION", "off").lower() == "on"
+        d["open_browser"] = False
+        if not PASSWORD:
+            sys.exit("On Replit, add a DASHBOARD_PASSWORD secret first "
+                     "(Tools > Secrets). Without it anyone with the link could use the dashboard.")
+
     if d.get("transcription", True):
         tr = Transcriber(CFG)
         if tr.load():
@@ -831,10 +867,14 @@ def main():
             except ValueError as e:
                 log.warning("[%s] skipped: %s", s["name"], e)
 
-    port = d.get("port", 8800)
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    port = int(os.environ.get("PORT", d.get("port", 8800)))
+    host = "0.0.0.0" if ON_REPLIT else d.get("host", "127.0.0.1")
+    if host != "127.0.0.1" and not PASSWORD:
+        sys.exit("Set a DASHBOARD_PASSWORD before opening the dashboard to the network.")
+    server = ThreadingHTTPServer((host, port), Handler)
     url = f"http://localhost:{port}"
-    log.info("Dashboard running at %s  (Ctrl+C to stop)", url)
+    log.info("Dashboard running at %s  (Ctrl+C to stop)%s", url,
+             "  (open it in Replit's Preview / Webview)" if ON_REPLIT else "")
     if d.get("open_browser", True):
         threading.Timer(1.0, lambda: webbrowser.open(url)).start()
     try:

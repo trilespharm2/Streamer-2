@@ -1,0 +1,17 @@
+# Replit: the Run button starts the Stream Dashboard and shows it in Preview.
+# To run the Telegram watcher instead, use the Shell:
+#   cd stream-order-watcher && pip install -r requirements.txt && python watcher.py
+modules = ["python-3.12"]
+run = "cd stream-dashboard && pip install -q -r requirements-replit.txt && python dashboard.py"
+
+[nix]
+channel = "stable-24_05"
+packages = ["ffmpeg"]
+
+[[ports]]
+localPort = 8800
+externalPort = 80
+
+[deployment]
+deploymentTarget = "vm"
+run = ["sh", "-c", "cd stream-dashboard && pip install -q -r requirements-replit.txt && python dashboard.py"]
